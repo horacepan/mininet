@@ -22,6 +22,9 @@ class Variable:
     def __rmul__(self, other):
         return Mult(self, other)
 
+    def __neg__(self):
+        return -1 * self
+
     def derivative(self, var):
         if var is self.name:
             return Constant(1)
@@ -129,13 +132,16 @@ class Sin(Variable):
 
 class Cos(Variable):
     def __init__(self, arg):
+        if isinstance(arg, (float, int, long)):
+            val = Constant(arg)
+
         self.arg = arg
 
     def evaluate(self, var_dict):
         return math.cos(self.arg.evaluate(var_dict))
 
     def derivative(self, var):
-        return Sin(self.arg) * self.arg.derivative(var)
+        return -Sin(self.arg) * self.arg.derivative(var)
 
     def __repr__(self):
         return "Cos({})".format(self.arg.__repr__())
@@ -143,7 +149,8 @@ class Cos(Variable):
 
 def main():
     x = Variable('x')
-    expr = Sin(2*x) + 3*x*x + 11
+    #expr = Sin(2*x) + 3*x*x + 11
+    expr = Cos(x) + 3*x + 11
     dexpr = expr.derivative('x')
 
     print expr
