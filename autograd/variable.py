@@ -22,8 +22,11 @@ class Variable:
     def __rmul__(self, other):
         return Mult(self, other)
 
-    def derivative(self):
-        return 1
+    def derivative(self, var):
+        if var is self.name:
+            return Constant(1)
+        else:
+            return Constant(0)
 
     def evaluate(self, var_dict):
         # Base variable is just the input value
@@ -43,15 +46,12 @@ class Constant(Variable):
         self.val = value
 
     def __repr__(self):
-        return "Constant({})".format(self.val)
+        return "{}".format(self.val)
 
     def evaluate(self, var_dict):
         return self.val
 
-    def derivative(self):
-        return 0
-
-    def backward(self):
+    def derivative(self, var):
         return 0
 
 class Add(Variable):
@@ -66,8 +66,8 @@ class Add(Variable):
     def evaluate(self, var_dict):
         return self.larg.evaluate(var_dict) + self.rarg.evaluate(var_dict)
 
-    def backward(self):
-        return self.larg.backward() + self.rarg.backward
+    def derivative(self, var):
+        return self.larg.derivative(var) + self.rarg.derivative(var)
 
     def __repr__(self):
         return "({} + {})".format(self.larg, self.rarg)
@@ -85,14 +85,14 @@ class Sub(Variable):
     def evaluate(self, var_dict):
         return self.larg.evaluate(var_dict) - self.rarg.evaluate(var_dict)
 
-    def backward(self):
-        return self.larg.backward() + self.rarg.backward
+    def derivative(self, var):
+        return self.larg.derivative(var) + self.rarg.derivative(var)
 
     def __repr__(self):
-        return "({} + {})".format(self.larg, self.rarg)
+        return "({} - {})".format(self.larg, self.rarg)
 
 class Mult(Variable):
-    def __ini__(self, loperand, roperand):
+    def __init__(self, larg, rarg):
         if isinstance(larg, (float, int, long)):
             larg = Constant(larg)
         if isinstance(rarg, (float, int, long)):
@@ -104,9 +104,9 @@ class Mult(Variable):
     def evaluate(self, var_dict):
         return self.larg.evaluate(var_dict) * self.rarg.evaluate(var_dict)
 
-    def backward(self):
-        return self.larg.backward() * self.rarg + \
-               self.larg * self.rarg.backward
+    def derivative(self, var):
+        return self.larg.derivative(var) * self.rarg + \
+               self.larg * self.rarg.derivative(var)
 
     def __repr__(self):
         return "({} * {})".format(self.larg, self.rarg)
@@ -121,8 +121,8 @@ class Sin(Variable):
     def evaluate(self, var_dict):
         return math.sin(self.arg.evaluate(var_dict))
 
-    def backward(self):
-        return Cos(val) * val.backward()
+    def derivative(self, var):
+        return Cos(self.arg) * self.arg.derivative(var)
 
     def __repr__(self):
         return "Sin({})".format(self.arg.__repr__())
@@ -134,8 +134,8 @@ class Cos(Variable):
     def evaluate(self, var_dict):
         return math.cos(self.arg.evaluate(var_dict))
 
-    def backward(self):
-        return Sin(val) * val.backward()
+    def derivative(self, var):
+        return Sin(self.arg) * self.arg.derivative(var)
 
     def __repr__(self):
         return "Cos({})".format(self.arg.__repr__())
@@ -143,9 +143,13 @@ class Cos(Variable):
 
 def main():
     x = Variable('x')
-    expr = Sin(x) + x + 5
+    expr = Sin(2*x) + 3*x*x + 11
+    dexpr = expr.derivative('x')
+
     print expr
-    print expr.evaluate({'x':math.pi})
+    print dexpr
+    print expr.evaluate({'x':0})
+    print dexpr.evaluate({'x':0})
 
 if __name__ == '__main__':
     main()
